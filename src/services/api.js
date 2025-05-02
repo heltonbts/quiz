@@ -1,124 +1,141 @@
 // src/services/api.js
+
+// Define a URL base da API, buscando da variável de ambiente VITE_API_URL
+// ou usando a URL do Render como fallback.
+// Certifique-se de ter um arquivo .env.production na raiz do seu projeto frontend com:
+// VITE_API_URL=https://quiz-f00o.onrender.com
 const API_URL = import.meta.env.VITE_API_URL || 'https://quiz-f00o.onrender.com';
 
-// Função para salvar um lead no banco de dados
+/**
+ * Função genérica para tratar respostas da API e erros comuns.
+ * @param {Response} response - O objeto de resposta do fetch.
+ * @param {string} defaultErrorMessage - Mensagem de erro padrão caso a API não retorne uma.
+ * @returns {Promise<object>} - Os dados JSON da resposta.
+ * @throws {Error} - Lança um erro se a resposta não for OK.
+ */
+const handleResponse = async (response, defaultErrorMessage = 'Erro desconhecido na API') => {
+    const data = await response.json(); // Tenta parsear JSON mesmo em erros, pois pode conter a mensagem
+    if (!response.ok) {
+        // Usa a mensagem de erro da API se existir, senão usa a padrão
+        throw new Error(data.error || defaultErrorMessage);
+    }
+    return data; // Retorna o objeto JSON completo em caso de sucesso
+};
+
+
+// Função para salvar um lead no banco de dados (POST)
 export const saveLead = async (leadData) => {
     try {
-        const response = await fetch(`${API_URL}/leads`, {
+        const response = await fetch(`${API_URL}/api/leads`, { // Caminho já estava correto
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(leadData),
         });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Erro ao salvar o lead');
-        }
-
-        return data;
+        // Trata a resposta e retorna os dados do lead criado (vem em data.data)
+        const responseData = await handleResponse(response, 'Erro ao salvar o lead');
+        return responseData.data;
     } catch (error) {
-        console.error('Erro ao salvar lead:', error);
-        throw error;
+        console.error('Erro em saveLead:', error);
+        throw error; // Re-lança o erro para ser tratado por quem chamou a função
     }
 };
 
-// Função para obter todos os leads
+// Função para obter todos os leads (GET)
 export const getAllLeads = async () => {
     try {
-        const response = await fetch(`${API_URL}/leads`);
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Erro ao obter leads');
-        }
-
-        return data.data;
+        // CORRIGIDO: Adicionado /api ao caminho
+        const response = await fetch(`${API_URL}/api/leads`);
+        // Trata a resposta e retorna a lista de leads (vem em data.data)
+        const responseData = await handleResponse(response, 'Erro ao obter leads');
+        return responseData.data || []; // Retorna a lista ou um array vazio se não houver dados
     } catch (error) {
-        console.error('Erro ao obter leads:', error);
+        console.error('Erro em getAllLeads:', error);
         throw error;
     }
 };
 
-// Função para obter leads por tipo
+// Função para obter leads por tipo (GET)
 export const getLeadsByType = async (type) => {
     try {
-        const response = await fetch(`${API_URL}/leads/type/${type}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Erro ao obter leads por tipo');
-        }
-
-        return data.data;
+        // Codifica o tipo para garantir que caracteres especiais (como 🔥) funcionem na URL
+        const encodedType = encodeURIComponent(type);
+        // CORRIGIDO: Adicionado /api ao caminho
+        const response = await fetch(`${API_URL}/api/leads/type/${encodedType}`);
+        // Trata a resposta e retorna a lista de leads filtrada (vem em data.data)
+        const responseData = await handleResponse(response, 'Erro ao obter leads por tipo');
+        return responseData.data || [];
     } catch (error) {
-        console.error(`Erro ao obter leads do tipo ${type}:`, error);
+        console.error(`Erro em getLeadsByType (${type}):`, error);
         throw error;
     }
 };
 
-// Função para atualizar o status de um lead
+// Função para atualizar o status de um lead (assumindo método PUT ou PATCH no backend)
+// Se seu backend não tem rota PUT/PATCH para /api/leads/:id, esta função não funcionará.
 export const updateLeadStatus = async (id, statusData) => {
     try {
-        const response = await fetch(`${API_URL}/leads/${id}`, {
-            method: 'PUT',
+        // CORRIGIDO: Adicionado /api ao caminho
+        const response = await fetch(`${API_URL}/api/leads/${id}`, {
+            method: 'PUT', // Ou 'PATCH', dependendo do seu backend
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(statusData),
         });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Erro ao atualizar o lead');
-        }
-
-        return data.data;
+        // Trata a resposta e retorna os dados do lead atualizado (vem em data.data)
+        const responseData = await handleResponse(response, 'Erro ao atualizar o lead');
+        return responseData.data;
     } catch (error) {
-        console.error('Erro ao atualizar lead:', error);
+        console.error(`Erro em updateLeadStatus (ID: ${id}):`, error);
         throw error;
     }
 };
 
-// Função para excluir um lead
+// Função para excluir um lead (DELETE)
 export const deleteLead = async (id) => {
     try {
-        const response = await fetch(`${API_URL}/leads/${id}`, {
+        // CORRIGIDO: Adicionado /api ao caminho
+        const response = await fetch(`${API_URL}/api/leads/${id}`, {
             method: 'DELETE',
         });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Erro ao excluir o lead');
-        }
-
-        return data;
+        // Trata a resposta (DELETE bem-sucedido geralmente retorna 200 OK ou 204 No Content)
+        // O corpo da resposta pode estar vazio ou conter { success: true, data: {} }
+        const responseData = await handleResponse(response, 'Erro ao excluir o lead');
+        return responseData; // Retorna a resposta completa (pode ser útil verificar success)
     } catch (error) {
-        console.error('Erro ao excluir lead:', error);
+        console.error(`Erro em deleteLead (ID: ${id}):`, error);
         throw error;
     }
 };
 
-// Função para exportar leads para CSV
+// Função para exportar leads para CSV (não faz chamada direta à API, usa getAllLeads)
 export const exportLeadsToCSV = async () => {
     try {
-        const leads = await getAllLeads();
+        const leads = await getAllLeads(); // Usa a função corrigida
+
+        if (!leads || leads.length === 0) {
+            alert('Não há leads para exportar.'); // Ou use uma notificação melhor
+            return;
+        }
 
         // Cabeçalhos do CSV
         let csvContent = "Nome,Nicho,WhatsApp,Pontuação,Tipo,Data de Cadastro\n";
 
-        // Adicionar dados
+        // Adicionar dados (com tratamento para vírgulas nos dados, se necessário)
         leads.forEach(lead => {
-            const date = new Date(lead.createdAt).toLocaleDateString('pt-BR');
-            csvContent += `${lead.name},${lead.niche},${lead.whatsapp},${lead.score},${lead.leadType},${date}\n`;
+            const name = `"${(lead.name || '').replace(/"/g, '""')}"`; // Coloca entre aspas e escapa aspas internas
+            const niche = `"${(lead.niche || '').replace(/"/g, '""')}"`;
+            const whatsapp = `"${(lead.whatsapp || '').replace(/"/g, '""')}"`;
+            const score = lead.score !== undefined ? lead.score : '';
+            const leadType = `"${(lead.leadType || '').replace(/"/g, '""')}"`;
+            const date = lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('pt-BR') : '';
+            csvContent += `${name},${niche},${whatsapp},${score},${leadType},${date}\n`;
         });
 
-        // Criar um blob com o conteúdo CSV
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        // Criar um blob com o conteúdo CSV (UTF-8 com BOM para melhor compatibilidade com Excel)
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
 
         // Criar um link para download e clicar nele
@@ -129,16 +146,18 @@ export const exportLeadsToCSV = async () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url); // Libera a memória do objeto URL
     } catch (error) {
         console.error('Erro ao exportar leads:', error);
-        throw error;
+        alert('Ocorreu um erro ao tentar exportar os leads.'); // Informa o usuário
+        // Não re-lança o erro aqui, pois é uma ação do usuário
     }
 };
 
-// Função para obter estatísticas de leads
+// Função para obter estatísticas de leads (não faz chamada direta à API, usa getAllLeads)
 export const getLeadStats = async () => {
     try {
-        const allLeads = await getAllLeads();
+        const allLeads = await getAllLeads(); // Usa a função corrigida
 
         // Contagem por tipo
         const hotLeads = allLeads.filter(lead => lead.leadType === "Quente 🔥");
@@ -160,7 +179,8 @@ export const getLeadStats = async () => {
         // Contar leads por dia
         const leadsByDay = last7Days.map(day => {
             const count = allLeads.filter(lead => {
-                const leadDate = new Date(lead.createdAt).toISOString().split('T')[0];
+                // Verifica se createdAt existe antes de tentar converter
+                const leadDate = lead.createdAt ? new Date(lead.createdAt).toISOString().split('T')[0] : null;
                 return leadDate === day;
             }).length;
 
@@ -180,6 +200,9 @@ export const getLeadStats = async () => {
         };
     } catch (error) {
         console.error('Erro ao obter estatísticas:', error);
-        throw error;
+        // Retorna um objeto padrão em caso de erro para não quebrar a UI
+        return {
+            total: 0, hot: 0, warm: 0, cold: 0, conversionRate: 0, trend: []
+        };
     }
 };

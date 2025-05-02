@@ -41,11 +41,13 @@ const leadSchema = new mongoose.Schema({
         enum: ['Quente 🔥', 'Morno ⚖️', 'Frio ❄️'],
         required: [true, 'Tipo de lead é obrigatório']
     },
+    // Adicione outros campos que você possa querer atualizar via PUT/PATCH
+    // Exemplo: status: { type: String, default: 'Novo' }
     createdAt: {
         type: Date,
         default: Date.now
     }
-});
+}, { timestamps: true }); // Adiciona createdAt e updatedAt automaticamente
 
 // Verifica se o modelo já foi compilado antes de compilar novamente
 const Lead = mongoose.models.Lead || mongoose.model('Lead', leadSchema);
@@ -82,47 +84,43 @@ mongoose.connect(process.env.MONGODB_URI)
     .catch(err => console.error('Erro ao conectar ao MongoDB:', err));
 
 // --- Rotas da API ---
-// (Seu código de rotas original, garantindo que usam /api/...)
 
-// Rota para criar um novo lead
+// Rota para criar um novo lead (POST)
 app.post('/api/leads', async (req, res) => {
     try {
-        const { name, niche, whatsapp, answers, score, leadType } = req.body;
-        const lead = await Lead.create({
-            name, niche, whatsapp, answers, score, leadType
-        });
+        // Considerar validação mais robusta dos dados de entrada aqui
+        const lead = await Lead.create(req.body);
         res.status(201).json({ success: true, data: lead });
     } catch (error) {
-        console.error("Erro ao criar lead:", error); // Adiciona log do erro no servidor
+        console.error("Erro ao criar lead:", error);
         res.status(400).json({ success: false, error: error.message });
     }
 });
 
-// Rota para obter todos os leads
+// Rota para obter todos os leads (GET)
 app.get('/api/leads', async (req, res) => {
     try {
         const leads = await Lead.find().sort({ createdAt: -1 });
         res.status(200).json({ success: true, count: leads.length, data: leads });
     } catch (error) {
         console.error("Erro ao obter leads:", error);
-        res.status(400).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Erro interno do servidor ao buscar leads' }); // Use 500 para erros de servidor
     }
 });
 
-// Rota para obter leads por tipo
+// Rota para obter leads por tipo (GET)
 app.get('/api/leads/type/:type', async (req, res) => {
     try {
-        // Decodifica o parâmetro da URL caso ele venha codificado (ex: %20 para espaço)
         const leadTypeDecoded = decodeURIComponent(req.params.type);
         const leads = await Lead.find({ leadType: leadTypeDecoded }).sort({ createdAt: -1 });
         res.status(200).json({ success: true, count: leads.length, data: leads });
     } catch (error) {
         console.error("Erro ao obter leads por tipo:", error);
-        res.status(400).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Erro interno do servidor ao buscar leads por tipo' });
     }
 });
 
-// Rota para obter um lead específico
+// Rota para obter um lead específico (GET)
 app.get('/api/leads/:id', async (req, res) => {
     try {
         const lead = await Lead.findById(req.params.id);
@@ -132,20 +130,52 @@ app.get('/api/leads/:id', async (req, res) => {
         res.status(200).json({ success: true, data: lead });
     } catch (error) {
         console.error("Erro ao obter lead por ID:", error);
-        // Verifica se o erro é de Cast (ID inválido)
         if (error.name === 'CastError') {
             return res.status(400).json({ success: false, error: 'ID do Lead inválido' });
         }
-        res.status(400).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Erro interno do servidor ao buscar lead' });
     }
 });
 
-// Rota para excluir um lead
+// Rota para atualizar um lead (PUT) - *** NOVA ROTA ADICIONADA ***
+app.put('/api/leads/:id', async (req, res) => {
+    try {
+        // Encontra o lead pelo ID e atualiza com os dados do corpo da requisição
+        // { new: true } garante que o objeto retornado seja a versão atualizada
+        // { runValidators: true } garante que as validações do Schema sejam aplicadas na atualização
+        const lead = await Lead.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true
+        });
+
+        // Se não encontrou o lead para atualizar
+        if (!lead) {
+            return res.status(404).json({ success: false, error: 'Lead não encontrado para atualização' });
+        }
+
+        // Retorna o lead atualizado
+        res.status(200).json({ success: true, data: lead });
+
+    } catch (error) {
+        console.error("Erro ao atualizar lead:", error);
+        if (error.name === 'CastError') {
+            return res.status(400).json({ success: false, error: 'ID do Lead inválido' });
+        }
+        // Se for erro de validação do Mongoose
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ success: false, error: error.message });
+        }
+        res.status(500).json({ success: false, error: 'Erro interno do servidor ao atualizar lead' });
+    }
+});
+
+
+// Rota para excluir um lead (DELETE)
 app.delete('/api/leads/:id', async (req, res) => {
     try {
         const lead = await Lead.findByIdAndDelete(req.params.id);
         if (!lead) {
-            return res.status(404).json({ success: false, error: 'Lead não encontrado' });
+            return res.status(404).json({ success: false, error: 'Lead não encontrado para exclusão' });
         }
         res.status(200).json({ success: true, data: {} }); // Retorna sucesso com dados vazios
     } catch (error) {
@@ -153,7 +183,7 @@ app.delete('/api/leads/:id', async (req, res) => {
         if (error.name === 'CastError') {
             return res.status(400).json({ success: false, error: 'ID do Lead inválido' });
         }
-        res.status(400).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Erro interno do servidor ao deletar lead' });
     }
 });
 
