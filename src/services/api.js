@@ -1,5 +1,5 @@
 // src/services/api.js
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://quiz-f00o.onrender.com';
 
 // Função para salvar um lead no banco de dados
 export const saveLead = async (leadData) => {
