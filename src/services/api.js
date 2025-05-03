@@ -72,23 +72,37 @@ export const getLeadsByType = async (type) => {
     }
 };
 
-// Função para atualizar o status de um lead (assumindo método PUT ou PATCH no backend)
-// Se seu backend não tem rota PUT/PATCH para /api/leads/:id, esta função não funcionará.
+// Função para atualizar o status de um lead
 export const updateLeadStatus = async (id, statusData) => {
     try {
-        // CORRIGIDO: Adicionado /api ao caminho
-        const response = await fetch(`${API_URL}/api/leads/${id}`, {
-            method: 'PUT', // Ou 'PATCH', dependendo do seu backend
+        // Log para debug
+        console.log('Atualizando status do lead:', id, statusData);
+
+        // CORRIGIDO: Usar a rota específica para atualização de status
+        const response = await fetch(`${API_URL}/api/leads/${id}/status`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(statusData),
         });
-        // Trata a resposta e retorna os dados do lead atualizado (vem em data.data)
-        const responseData = await handleResponse(response, 'Erro ao atualizar o lead');
+
+        // Log para debug
+        console.log('Status da resposta:', response.status);
+
+        // Tratar a resposta com nossa função handleResponse
+        const responseData = await handleResponse(response, 'Erro ao atualizar o status do lead');
+
+        // Log para debug
+        console.log('Lead atualizado com sucesso:', responseData.data);
+
         return responseData.data;
     } catch (error) {
         console.error(`Erro em updateLeadStatus (ID: ${id}):`, error);
+        // Adicionar mais detalhes ao erro para facilitar a depuração
+        if (error.message) {
+            console.error('Mensagem de erro:', error.message);
+        }
         throw error;
     }
 };

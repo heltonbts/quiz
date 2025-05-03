@@ -14,7 +14,7 @@ const __dirname = dirname(__filename);
 // Carrega variáveis de ambiente (Ok para uso local, Render usa as variáveis do dashboard)
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-// Definição do modelo Lead (como você forneceu)
+// Definição do modelo Lead com campos atualizados para incluir status
 const leadSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -41,8 +41,27 @@ const leadSchema = new mongoose.Schema({
         enum: ['Quente 🔥', 'Morno ⚖️', 'Frio ❄️'],
         required: [true, 'Tipo de lead é obrigatório']
     },
-    // Adicione outros campos que você possa querer atualizar via PUT/PATCH
-    // Exemplo: status: { type: String, default: 'Novo' }
+    // Campos para status e detalhes de venda
+    status: {
+        type: String,
+        enum: ['Novo', 'Contatado', 'Sem Retorno', 'Não Vendido', 'Vendido'],
+        default: 'Novo'
+    },
+    saleDetails: {
+        type: {
+            type: String,
+            enum: ['', 'Básico', 'Standard', 'Premium', 'Outro'],
+            default: ''
+        },
+        value: {
+            type: Number,
+            default: null
+        },
+        notes: {
+            type: String,
+            default: ''
+        }
+    },
     createdAt: {
         type: Date,
         default: Date.now
@@ -137,7 +156,7 @@ app.get('/api/leads/:id', async (req, res) => {
     }
 });
 
-// Rota para atualizar um lead (PUT) - *** NOVA ROTA ADICIONADA ***
+// Rota para atualizar um lead (PUT)
 app.put('/api/leads/:id', async (req, res) => {
     try {
         // Encontra o lead pelo ID e atualiza com os dados do corpo da requisição
@@ -169,6 +188,66 @@ app.put('/api/leads/:id', async (req, res) => {
     }
 });
 
+// Rota específica para atualizar o status de um lead (PATCH)
+app.patch('/api/leads/:id/status', async (req, res) => {
+    try {
+        const { status, saleDetails } = req.body;
+
+        // Validação básica
+        if (!status) {
+            return res.status(400).json({
+                success: false,
+                error: 'O campo status é obrigatório'
+            });
+        }
+
+        // Cria um objeto com os campos a serem atualizados
+        const updateData = { status };
+
+        // Adiciona saleDetails apenas se fornecido e o status for 'Vendido'
+        if (status === 'Vendido' && saleDetails) {
+            updateData.saleDetails = saleDetails;
+        }
+
+        // Encontra e atualiza o lead
+        const lead = await Lead.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!lead) {
+            return res.status(404).json({
+                success: false,
+                error: 'Lead não encontrado'
+            });
+        }
+
+        res.status(200).json({ success: true, data: lead });
+
+    } catch (error) {
+        console.error("Erro ao atualizar status do lead:", error);
+
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                error: 'ID do Lead inválido'
+            });
+        }
+
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                error: error.message
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            error: 'Erro interno do servidor ao atualizar status'
+        });
+    }
+});
 
 // Rota para excluir um lead (DELETE)
 app.delete('/api/leads/:id', async (req, res) => {

@@ -1,7 +1,8 @@
 // src/components/Dashboard.jsx
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getAllLeads, getLeadsByType, exportLeadsToCSV, updateLeadStatus, deleteLead } from '../services/api';
+import StatusDropdown from './StatusDropdown'; // Importando o novo componente
 
 const Dashboard = () => {
     const [leads, setLeads] = useState([]);
@@ -27,6 +28,18 @@ const Dashboard = () => {
             notes: ''
         }
     });
+    // Estado para notificações
+    const [notification, setNotification] = useState(null);
+
+    // Função para mostrar notificação
+    const showNotification = (message, type = 'success') => {
+        setNotification({ message, type });
+
+        // Auto-esconder a notificação após 3 segundos
+        setTimeout(() => {
+            setNotification(null);
+        }, 3000);
+    };
 
     // Função para carregar os leads
     const loadLeads = async () => {
@@ -65,6 +78,7 @@ const Dashboard = () => {
         } catch (err) {
             setError('Erro ao carregar leads. Por favor, tente novamente.');
             console.error(err);
+            showNotification('Erro ao carregar leads. Por favor, tente novamente.', 'error');
         } finally {
             setLoading(false);
         }
@@ -113,6 +127,7 @@ const Dashboard = () => {
             window.open(`https://wa.me/55${cleanNumber}`, '_blank');
         }
     };
+
     // Abrir modal de status
     const openStatusModal = (lead) => {
         setSelectedLead(lead);
@@ -152,9 +167,10 @@ const Dashboard = () => {
             setDeleteConfirm(null);
             // Recarregar estatísticas
             loadLeads();
+            showNotification('Lead excluído com sucesso!');
         } catch (error) {
             console.error('Erro ao excluir lead:', error);
-            alert('Erro ao excluir lead. Tente novamente.');
+            showNotification('Erro ao excluir lead. Tente novamente.', 'error');
         }
     };
 
@@ -163,21 +179,49 @@ const Dashboard = () => {
         if (!selectedLead) return;
 
         try {
+            // Log para debug
+            console.log('Enviando atualização de status:', {
+                leadId: selectedLead._id,
+                statusData: statusData
+            });
+
+            // Faz a chamada de API para atualizar o lead
             const updatedLead = await updateLeadStatus(selectedLead._id, statusData);
 
-            // Atualizar o lead na lista
+            // Log para debug
+            console.log('Resposta da API:', updatedLead);
+
+            // Atualiza o lead na lista local
             setLeads(leads.map(lead =>
                 lead._id === updatedLead._id ? updatedLead : lead
             ));
 
+            // Feedback para o usuário
+            showNotification('Status atualizado com sucesso!');
+
+            // Fecha o modal
             closeStatusModal();
 
             // Recarregar estatísticas
             loadLeads();
         } catch (error) {
             console.error('Erro ao atualizar status:', error);
-            alert('Erro ao atualizar status. Tente novamente.');
+            showNotification('Erro ao atualizar status. Tente novamente.', 'error');
         }
+    };
+
+    // Função de callback quando o status é alterado pelo StatusDropdown
+    const handleStatusChangeFromDropdown = (updatedLead) => {
+        // Atualiza o lead na lista
+        setLeads(leads.map(lead =>
+            lead._id === updatedLead._id ? updatedLead : lead
+        ));
+
+        // Mostra notificação
+        showNotification(`Status atualizado para ${updatedLead.status}`);
+
+        // Recarrega dados para atualizar estatísticas
+        loadLeads();
     };
 
     // Renderizar modal de detalhes do lead
@@ -265,20 +309,10 @@ const Dashboard = () => {
                         <div className="bg-gray-900 rounded-lg px-4 py-3 mb-2">
                             <h3 className="text-gray-400 text-sm">Status</h3>
                             <div className="flex flex-col">
-                                <span
-                                    className={`inline-block px-3 py-1 rounded-full text-sm my-1 w-fit ${currentStatus === 'Vendido'
-                                        ? 'bg-green-900 text-green-100'
-                                        : currentStatus === 'Contatado'
-                                            ? 'bg-blue-900 text-blue-100'
-                                            : currentStatus === 'Sem Retorno'
-                                                ? 'bg-yellow-900 text-yellow-100'
-                                                : currentStatus === 'Não Vendido'
-                                                    ? 'bg-red-900 text-red-100'
-                                                    : 'bg-gray-700 text-gray-300'
-                                        }`}
-                                >
-                                    {currentStatus}
-                                </span>
+                                <StatusDropdown
+                                    lead={selectedLead}
+                                    onStatusChange={handleStatusChangeFromDropdown}
+                                />
 
                                 {statusInfo && (
                                     <p className="text-gray-300 text-sm mt-2">{statusInfo}</p>
@@ -469,6 +503,30 @@ const Dashboard = () => {
                     </div>
                 </motion.div>
             </div>
+        );
+    };
+
+    // Renderizar notificação
+    const renderNotification = () => {
+        if (!notification) return null;
+
+        const bgColor = notification.type === 'success'
+            ? 'bg-green-600'
+            : notification.type === 'error'
+                ? 'bg-red-600'
+                : 'bg-blue-600';
+
+        return (
+            <AnimatePresence>
+                <motion.div
+                    initial={{ opacity: 0, y: -50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -50 }}
+                    className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white ${bgColor}`}
+                >
+                    {notification.message}
+                </motion.div>
+            </AnimatePresence>
         );
     };
 
@@ -686,21 +744,12 @@ const Dashboard = () => {
                                         {lead.leadType}
                                     </span>
                                 </td>
-                                <td className="py-3 px-4">
-                                    <span
-                                        className={`inline-block px-3 py-1 rounded-full text-sm ${(lead.status === 'Vendido')
-                                            ? 'bg-green-900 text-green-100'
-                                            : (lead.status === 'Contatado')
-                                                ? 'bg-blue-900 text-blue-100'
-                                                : (lead.status === 'Sem Retorno')
-                                                    ? 'bg-yellow-900 text-yellow-100'
-                                                    : (lead.status === 'Não Vendido')
-                                                        ? 'bg-red-900 text-red-100'
-                                                        : 'bg-gray-700 text-gray-300'
-                                            }`}
-                                    >
-                                        {lead.status || 'Novo'}
-                                    </span>
+                                <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                                    {/* Componente de Status com Dropdown */}
+                                    <StatusDropdown
+                                        lead={lead}
+                                        onStatusChange={handleStatusChangeFromDropdown}
+                                    />
                                 </td>
                                 <td className="py-3 px-4 text-gray-300">{formatDate(lead.createdAt)}</td>
                                 <td className="py-3 px-4 text-center">
@@ -723,7 +772,7 @@ const Dashboard = () => {
                                                 openStatusModal(lead);
                                             }}
                                             className="p-2 bg-indigo-800 hover:bg-indigo-700 rounded-lg text-indigo-100 transition-colors"
-                                            title="Atualizar Status"
+                                            title="Atualizar Status (Modal)"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -777,6 +826,9 @@ const Dashboard = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 to-blue-900 p-6">
+            {/* Renderizar notificações */}
+            {renderNotification()}
+
             <div className="max-w-6xl mx-auto">
                 <div className="flex items-center justify-between mb-8">
                     <div>
@@ -800,7 +852,10 @@ const Dashboard = () => {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center shadow-lg transition-colors"
-                            onClick={() => exportLeadsToCSV()}
+                            onClick={() => {
+                                exportLeadsToCSV();
+                                showNotification('Leads exportados com sucesso!');
+                            }}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
