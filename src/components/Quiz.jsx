@@ -273,12 +273,12 @@ const Quiz = () => {
 
     const handleWarmLeadAction = () => {
         // Redirecionar para página de vendas
-        window.location.href = 'https://seusite.com/pagina-de-vendas';
+        window.location.href = 'https://productgenesis.shop/landingpage';
     };
 
     const handleColdLeadAction = () => {
         // Redirecionar para oferta de ticket menor
-        window.location.href = 'https://seusite.com/oferta-especial';
+        window.location.href = 'https://productgenesis.shop/oferta-especial';
     };
 
     // Renderização do resultado final
