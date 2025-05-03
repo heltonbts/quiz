@@ -188,7 +188,68 @@ app.put('/api/leads/:id', async (req, res) => {
     }
 });
 
-// Rota específica para atualizar o status de um lead (PATCH)
+// Rota para atualizar o status de um lead (PUT)
+app.put('/api/leads/:id/status', async (req, res) => {
+    try {
+        const { status, saleDetails } = req.body;
+
+        // Validação básica
+        if (!status) {
+            return res.status(400).json({
+                success: false,
+                error: 'O campo status é obrigatório'
+            });
+        }
+
+        // Cria um objeto com os campos a serem atualizados
+        const updateData = { status };
+
+        // Adiciona saleDetails apenas se fornecido e o status for 'Vendido'
+        if (status === 'Vendido' && saleDetails) {
+            updateData.saleDetails = saleDetails;
+        }
+
+        // Encontra e atualiza o lead
+        const lead = await Lead.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!lead) {
+            return res.status(404).json({
+                success: false,
+                error: 'Lead não encontrado'
+            });
+        }
+
+        res.status(200).json({ success: true, data: lead });
+
+    } catch (error) {
+        console.error("Erro ao atualizar status do lead:", error);
+
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                error: 'ID do Lead inválido'
+            });
+        }
+
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                error: error.message
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            error: 'Erro interno do servidor ao atualizar status'
+        });
+    }
+});
+
+// Rota para atualizar o status de um lead (PATCH) - Implementação alternativa para suportar ambos os métodos
 app.patch('/api/leads/:id/status', async (req, res) => {
     try {
         const { status, saleDetails } = req.body;

@@ -73,40 +73,28 @@ export const getLeadsByType = async (type) => {
 };
 
 // Função para atualizar o status de um lead
-export const updateLeadStatus = async (id, statusData) => {
+export const updateLeadStatus = async (leadId, statusData) => {
     try {
-        // Log para debug
-        console.log('Atualizando status do lead:', id, statusData);
-
-        // CORRIGIDO: Usar a rota específica para atualização de status
-        const response = await fetch(`${API_URL}/api/leads/${id}/status`, {
-            method: 'PUT',
+        const response = await fetch(`/api/leads/${leadId}/status`, {
+            method: 'PATCH', // Alterado de PUT para PATCH para corresponder ao backend
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(statusData),
         });
 
-        // Log para debug
-        console.log('Status da resposta:', response.status);
-
-        // Tratar a resposta com nossa função handleResponse
-        const responseData = await handleResponse(response, 'Erro ao atualizar o status do lead');
-
-        // Log para debug
-        console.log('Lead atualizado com sucesso:', responseData.data);
-
-        return responseData.data;
-    } catch (error) {
-        console.error(`Erro em updateLeadStatus (ID: ${id}):`, error);
-        // Adicionar mais detalhes ao erro para facilitar a depuração
-        if (error.message) {
-            console.error('Mensagem de erro:', error.message);
+        if (!response.ok) {
+            console.log('Status da resposta:', response.status);
+            throw new Error(`Erro ao atualizar status: ${response.statusText}`);
         }
+
+        return await response.json();
+    } catch (error) {
+        console.log('Erro em updateLeadStatus (ID:', leadId + '):', error);
+        console.log('Mensagem de erro:', error.message);
         throw error;
     }
 };
-
 // Função para excluir um lead (DELETE)
 export const deleteLead = async (id) => {
     try {
