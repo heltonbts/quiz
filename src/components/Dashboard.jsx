@@ -101,10 +101,18 @@ const Dashboard = () => {
 
     // Entrar em contato via WhatsApp
     const contactViaWhatsApp = (whatsappNumber) => {
-        const cleanNumber = whatsappNumber.replace(/\D/g, '');
-        window.open(`https://wa.me/+55${cleanNumber}`, '_blank');
-    };
+        // Remove todos os caracteres não numéricos
+        let cleanNumber = whatsappNumber.replace(/\D/g, '');
 
+        // Verifica se o número já começa com 55 (prefixo do Brasil)
+        if (cleanNumber.startsWith('55')) {
+            // Se já começa com 55, só adiciona o "+" no início
+            window.open(`https://wa.me/${cleanNumber}`, '_blank');
+        } else {
+            // Se não começa com 55, adiciona o prefixo completo +55
+            window.open(`https://wa.me/55${cleanNumber}`, '_blank');
+        }
+    };
     // Abrir modal de status
     const openStatusModal = (lead) => {
         setSelectedLead(lead);
