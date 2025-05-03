@@ -102,7 +102,7 @@ const Dashboard = () => {
     // Entrar em contato via WhatsApp
     const contactViaWhatsApp = (whatsappNumber) => {
         const cleanNumber = whatsappNumber.replace(/\D/g, '');
-        window.open(`https://wa.me/${cleanNumber}`, '_blank');
+        window.open(`https://wa.me/+55${cleanNumber}`, '_blank');
     };
 
     // Abrir modal de status

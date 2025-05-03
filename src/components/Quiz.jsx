@@ -259,16 +259,16 @@ const Quiz = () => {
             </motion.div>
         );
     };
-    // Adicione essas funções ao componente Quiz, antes do renderResult
+
     const handleHotLeadAction = () => {
         // Formatar número removendo caracteres especiais
         const formattedNumber = whatsapp.replace(/\D/g, '');
 
         // Mensagem personalizada (codificada para URL)
-        const message = encodeURIComponent(`Olá ${userName}! Vi que você tem interesse em uma página de conversão para ${niche}. Posso te apresentar nossa solução completa?`);
+        const message = encodeURIComponent(`Oi! O quiz confirmou o que eu já imaginava. Quero saber valores, prazos e como podemos iniciar nossa parceria o quanto antes.`);
 
         // Redirecionar para WhatsApp
-        window.open(`https://wa.me/${formattedNumber}?text=${message}`, '_blank');
+        window.open(`https://wa.me/+5588992972504?text=${message}`, '_blank');
     };
 
     const handleWarmLeadAction = () => {
@@ -288,16 +288,16 @@ const Quiz = () => {
         let handleAction = null;
 
         if (leadType === "Quente 🔥") {
-            redirectMessage = "Você será redirecionado para o WhatsApp com uma proposta personalizada!";
-            actionButton = "Falar com um consultor";
+            redirectMessage = "Você será redirecionado para o WhatsApp com sua proposta premium personalizada";
+            actionButton = "Acessar minha proposta exclusiva";
             handleAction = handleHotLeadAction;
         } else if (leadType === "Morno ⚖️") {
-            redirectMessage = "Confira nossa página de vendas com mais detalhes!";
-            actionButton = "Ver página de vendas";
+            redirectMessage = "Baseado nas suas respostas, preparamos recomendações exclusivas para você.";
+            actionButton = "Ver minhas recomendações";
             handleAction = handleWarmLeadAction;
         } else {
-            redirectMessage = "Veja esta opção especial que preparamos para você:";
-            actionButton = "Ver oferta especial";
+            redirectMessage = "Descobrimos uma solução introdutória ideal para o seu perfil:";
+            actionButton = "Conhecer solução";
             handleAction = handleColdLeadAction;
         }
 
@@ -308,7 +308,7 @@ const Quiz = () => {
                 transition={{ duration: 0.5 }}
                 className="text-center"
             >
-                <h2 className="text-2xl font-bold text-white mb-4">Obrigado por completar o quiz!</h2>
+                <h2 className="text-2xl font-bold text-white mb-4">Resultado pronto!</h2>
                 <p className="mb-6 text-gray-300">
                     {redirectMessage}
                 </p>
