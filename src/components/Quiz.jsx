@@ -1,5 +1,6 @@
 // src/components/Quiz.jsx
 import { useState, useEffect } from 'react';
+import ReactPixel from 'react-facebook-pixel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { saveLead } from '../services/api';
 
@@ -267,16 +268,41 @@ const Quiz = () => {
         // Mensagem personalizada (codificada para URL)
         const message = encodeURIComponent(`Oi! O quiz confirmou o que eu já imaginava. Quero saber valores, prazos e como podemos iniciar nossa parceria o quanto antes.`);
 
+        ReactPixel.track('Lead', {
+            content_name: 'Hot Lead WhatsApp CTA', // Descreva a origem do lead
+            lead_type: 'Hot Quiz Lead',           // Tipo específico de lead
+        });
+        console.log("Evento 'Lead' (Hot Lead WhatsApp) disparado para o Pixel!");
         // Redirecionar para WhatsApp
         window.open(`https://wa.me/+5588992972504?text=${message}`, '_blank');
     };
 
     const handleWarmLeadAction = () => {
+
+        ReactPixel.track('ViewContent', {
+            content_name: 'Redirect to Main Sales Page (Warm Lead)', // Nome do conteúdo ou da ação
+            content_category: 'Sales Page Visit',                   // Categoria da ação
+            lead_temperature: 'warm',                               // Segmentação do lead
+            product_offering: 'main_product',                       // Identificador da oferta
+            destination_url: destinationUrl                         // URL de destino (útil para análise)
+        });
+        console.log("Evento 'ViewContent' (Warm Lead to Main Sales Page) disparado para o Pixel!");
+
+
         // Redirecionar para página de vendas
         window.location.href = 'https://productgenesis.shop/landingpage';
     };
 
     const handleColdLeadAction = () => {
+
+        ReactPixel.track('ViewContent', {
+            content_name: 'Redirect to Low-Ticket Sales Page (Cold Lead)', // Nome do conteúdo ou da ação
+            content_category: 'Sales Page Visit',                         // Categoria da ação
+            lead_temperature: 'cold',                                     // Segmentação do lead
+            product_offering: 'low_ticket_offer',                         // Identificador da oferta
+            destination_url: destinationUrl                               // URL de destino
+        });
+        console.log("Evento 'ViewContent' (Cold Lead to Low-Ticket Sales Page) disparado para o Pixel!");
         // Redirecionar para oferta de ticket menor
         window.location.href = 'https://productgenesis.shop/oferta-especial';
     };

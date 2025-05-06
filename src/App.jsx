@@ -1,5 +1,6 @@
 // src/App.jsx
 import { useState, useEffect } from 'react';
+import ReactPixel from 'react-facebook-pixel';
 import { motion } from 'framer-motion';
 import Quiz from './components/Quiz';
 import Dashboard from './components/Dashboard';
@@ -15,6 +16,12 @@ function App() {
   const ADMIN_PASSWORD = 'jesuserei';
 
   useEffect(() => {
+
+    if (PIXEL_ID) { // Só inicializa se o PIXEL_ID estiver definido
+      ReactPixel.init(820695673290716, null, options); // O segundo argumento é para 'advancedMatching', pode ser null ou {} se não usado
+      ReactPixel.pageView(); // Rastreia a visualização da página inicial
+      console.log('Facebook Pixel inicializado e PageView disparado!');
+    }
     // Verificar se o usuário já está logado como admin
     const adminStatus = localStorage.getItem('isAdmin');
     if (adminStatus === 'true') {
